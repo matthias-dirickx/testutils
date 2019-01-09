@@ -1,18 +1,4 @@
-/*
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
+package be.fednot.katalon.support
 
 import groovy.util.XmlSlurper;
 import groovy.util.slurpersupport.GPathResult;
@@ -28,19 +14,17 @@ import java.util.concurrent.TimeUnit
 import com.kms.katalon.core.logging.KeywordLogger;
 
 public class XMLTestDataManipulator {
-	
-	//TODO Make this file compatible with both groovy and java.
-	//especially each statements should be replaced and XmlSlurper lib should be verified within java context.
 
 	//Logger -- Katalon, so not usable outside Katalon context.
 	KeywordLogger log = new KeywordLogger();
 
 	/*XML holder for the object to do the manipulations on.
-	XMLSlurper is a working object. You do the manipulation on a node.
-	Serializing the xml variable will return the updated XML.*/
+	 XMLSlurper is a working object. You do the manipulation on a node.
+	 Serializing the xml variable will return the updated XML.*/
 	private GPathResult xml;
 
-	
+	private Map<String, String> formatLibrary;
+
 	/**
 	 * Creates an instance of XMLTestDataManipulator.
 	 * The xml object (type is GPathResult) is set with the file content.
@@ -54,7 +38,7 @@ public class XMLTestDataManipulator {
 		xml = new XmlSlurper().parse(xmlFile);
 	}
 
-	
+
 	/**
 	 * Creates an instance of XMLTestDataManipulator.
 	 * The xml object (type is GPathResult) is set with the string.
@@ -68,7 +52,7 @@ public class XMLTestDataManipulator {
 		this.xml = new XmlSlurper().parseText(xmlString);
 	}
 
-	
+
 	/**
 	 * Weak implementation! Read code before you implement.
 	 * 
@@ -91,6 +75,8 @@ public class XMLTestDataManipulator {
 	 * @return this (fluid api)
 	 */
 	public XMLTestDataManipulator updateAllDatesRelativeToDetectedCreationDate() {
+		setFormatLibrary();
+
 		List<GPathResult> dateNodes = getDateNodes();
 		GPathResult createdDateNode = getCreatedDateNode();
 
@@ -100,21 +86,19 @@ public class XMLTestDataManipulator {
 		//new created date time
 		LocalDateTime now = LocalDateTime.now();
 
-		//Milliseconds between detected creation and now date
-		Long diff = ChronoUnit.NANOS.between(baseLineDt, now)
-
 		dateNodes.each {GPathResult node ->
-			LocalDateTime dt = getDateFromNode(node);
-			DateTimeFormatter dtf = getDateTimeFormatterFromNode(node);
-			
-			LocalDateTime newdt = dt.plusNanos(diff);
-			
-			node.replaceBody(newdt.format(dtf));
+			node.replaceBody(
+				now.plusNanos(
+					ChronoUnit.NANOS.between(
+						baseLineDt,
+						getDateFromNode(node)))
+				            .format(
+								getDateTimeFormatterFromNode(node)));
 		}
 		return this;
 	}
 
-	
+
 	/**
 	 * Get the XML serialized as string.
 	 * 
@@ -128,7 +112,7 @@ public class XMLTestDataManipulator {
 		return XmlUtil.serialize(this.xml);
 	}
 
-	
+
 	/**
 	 * Get the guessed creation date based on a regex.
 	 * 
@@ -151,7 +135,7 @@ public class XMLTestDataManipulator {
 		return creationCandidates[0];
 	}
 
-	
+
 	/**
 	 * Get the node body as date.
 	 * 
@@ -169,8 +153,8 @@ public class XMLTestDataManipulator {
 				getDateTimeFormatterFromNode(node));
 		return dateTime;
 	}
-	
-	
+
+
 	/**
 	 * 
 	 * @param node -- GPathResult
@@ -180,7 +164,19 @@ public class XMLTestDataManipulator {
 		return DateTimeFormatter.ofPattern(dateFormatDetector(node.toString()));
 	}
 
-	
+
+	private Map<String, String> setFormatLibrary() {
+		Map<String, String> formatLibrary = new HashMap<>();
+		formatLibrary.put(
+				/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/,
+				"yyyy-MM-dd'T'HH:mm:ss.SSS");
+		formatLibrary.put(
+				/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
+				"yyyy-MM-dd'T'HH:mm:ss");
+		this.formatLibrary = formatLibrary;
+	}
+
+
 	/**
 	 * Get the guessed date format by regex comparison.
 	 * 
@@ -193,15 +189,7 @@ public class XMLTestDataManipulator {
 		boolean found;
 		found = false;
 
-		Map<String, String> formatLibrary = new HashMap<>();
-		formatLibrary.put(
-			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/,
-			"yyyy-MM-dd'T'HH:mm:ss.SSS");
-		formatLibrary.put(
-			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
-			"yyyy-MM-dd'T'HH:mm:ss");
-
-		formatLibrary.each {reg, format ->
+		this.formatLibrary.each {reg, format ->
 			boolean m = (dateString =~ reg);
 			if(m) {
 				formatToUse = format;
@@ -220,7 +208,7 @@ public class XMLTestDataManipulator {
 		}
 	}
 
-	
+
 	/**
 	 * Get the date tags.
 	 * 
