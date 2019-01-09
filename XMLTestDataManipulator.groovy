@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit
 import com.kms.katalon.core.logging.KeywordLogger;
 
 public class XMLTestDataManipulator {
+	
+	//TODO Make this file compatible with both groovy and java.
+	//especially each statements should be replaced and XmlSlurper lib should be verified within java context.
 
 	//Logger -- Katalon, so not usable outside Katalon context.
 	KeywordLogger log = new KeywordLogger();
