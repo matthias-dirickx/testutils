@@ -13,7 +13,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package be.fednot.katalon.support
 
 import groovy.util.XmlSlurper;
 import groovy.util.slurpersupport.GPathResult;
