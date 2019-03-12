@@ -25,3 +25,24 @@ Essentially we're doing this:
 - Guess creation date
 - calculate diff between now and creation date
 - add that amount of time to each date
+
+## ImageCompare
+### Problem
+From time to time there's a need to compare some graphics like logos and buttons or error message layouts.
+
+This is not AI or computer vision. The pixel by pixel is suboptimal and slow but gets the job done.
+
+The goal here is not to automatically go through an application, but rather to verify a logo or a piece of the layout.
+
+### Proposed solution
+A pixel by pixel comparison.
+
+There is an option to:
+ - Use distance or just count differences
+ - Look at the entire pixel (RGB only) or split out the colors, taking into account an optional alpha channel.
+ 
+The first implementation returns true or false. With the first inexact pixel, the function quits and returns false.
+
+The second implementation returns a double. The result is the estimated percentage difference.
+
+For more details, please read the code.
