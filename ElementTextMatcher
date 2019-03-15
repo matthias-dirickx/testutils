@@ -1,0 +1,170 @@
+import [...].WebElementSupport;
+
+import org.openqa.selenium.WebElement;
+
+/**
+ * 
+ * @author mdirickx
+ * 
+ * Helper class -- creating matches against objects based on text.
+ * 
+ * Goal: collecting text matching logic and delegating the matching to this subclass rather than repeating logic.
+ * 
+ * @usage
+ * Create a matcher to handle to match value and logic.
+ * Match with the {@link #isMatchFor(WebElement) isMatchFor} method.
+ * 
+ * Have it all in one go:
+ * ElementTextMatcher etm = new ElementTextMatcher("find this").setContains().isMatchFor(webElement);
+ *
+ * First configure:
+ * ElementTextMatcher etm = new ElementTextMatcher("find this").setContains(true);
+ * etm.isMatch(myWebElement);
+ * 
+ * --> Returns true if conditions true.
+ * --> Returns false if conditions false.
+ *
+ * The checks are a series of IFs, ordered as:
+ * <ul>
+ * <li>Starts With</i>
+ * <li>Contains</i>
+ * <li>Is REGEX</li>
+ * <li>If none --> return result for exact match</li>
+ * </ul>
+ *
+ * The checks are done in that order, and the blooean that is returned is overwritten on each consequent check.
+ * It was a choice at the time. You can rewrite this.
+ *
+ * The ignore case boolean is treated separately. So you can have that wit all of them.
+ * It might screw with the regex implementation, so be careful there. I'll update this when I change it for myself.
+ */
+public class ElementTextMatcher {
+
+	private String name;
+	private boolean useAttribute;
+	private String attribute;
+	private boolean contains;
+	private boolean isRegex;
+	private boolean startsWith;
+	private boolean ignoreCase;
+	private boolean onlyRootElement;
+
+	/**
+	 * Initialization of class will set the attributes.
+	 * 
+	 * Settings can be done in the setter functions.
+	 * If you use an IDE the options will be offered.
+	 * 
+	 * Possibilities:
+	 * <ul>
+	 * <li>Ignore case (setIgnoreCase(boolean))
+	 *     <ul><li>This ignores the case of both target and what it is matched to. All is set to lower case.</li>
+	 *         <li>default: false</li>
+	 *     </ul>
+	 * </li>
+	 * <li>Is Regex (setIsRegex(boolean))
+	 *     <ul><li>This sets the match term 'name' to be used as regex.
+	 * It needs to be valid regex and it will be matched as such.
+	 * When set true, contains and starts with are automatically disengaged.</li>
+	 *         <li>default: false</li>
+	 *     </ul>
+	 * </li>
+	 * <li>Contains (setContains(boolean))
+	 *     <ul><li>This makes the matcher look for a match within the target.</li>
+	 *         <li>default: false</li>
+	 *     </ul>
+	 * </li>
+	 * </ul>
+	 * 
+	 * @param name			String	The text to search for
+	 */
+	public ElementTextMatcher(String name) {
+		this.name = name;
+
+		this.contains = false;
+		this.isRegex = false;
+		this.startsWith = false;
+		this.ignoreCase = false;
+		this.useAttribute = false;
+		this.attribute = "";
+	}
+
+	public ElementTextMatcher setIgnoreCase(boolean ignoreCase) {
+		this.ignoreCase = ignoreCase;
+		return this;
+	}
+
+	public ElementTextMatcher setIsRegex(boolean isRegex) {
+		this.isRegex = isRegex;
+		return this;
+	}
+
+	public ElementTextMatcher setContains(boolean contains) {
+		this.contains = contains;
+		return this;
+	}
+
+	public ElementTextMatcher setStartsWith(boolean startsWith) {
+		this.startsWith = startsWith;
+		return this;
+	}
+
+	public ElementTextMatcher setAttribute(String attribute) {
+		this.attribute = attribute;
+		this.useAttribute = true;
+		return this;
+	}
+
+	/**
+	 * Match against the element text obtained with the getText() method.
+	 * 
+	 * Matches element against configured ElementTextMatcher attributes.
+	 * No reconfiguration possible on the fly.
+	 * 
+	 * @param el - WebElement
+	 * @return boolean
+	 */
+	public boolean isMatchFor(WebElement el) {
+		if (useAttribute) {
+			return isMatchFor(el.getAttribute(attribute));
+		} else {
+			if(onlyRootElement) {
+				//Standard implementation strict = false
+				//Meaning: p tags and so on are considered included
+				return isMatchFor(WebElementSupport
+						.getTextFromRootElementOnly(el,false));
+			} else {
+				return isMatchFor(el.getText());
+			}
+		}
+	}
+
+	public boolean isMatchFor(String text) {
+
+		//Ignore case setting
+		//If ignore case - reduce both text and name to lower case.
+		if(ignoreCase) {
+			text = text.toLowerCase();
+			name = name.toLowerCase();
+		}
+
+		/*
+		 * Check for type and apply.
+		 * If not startsWith, contains or isRegex,
+		 * then return equals (exact).
+		 */
+		if (startsWith){
+			return text.startsWith(name);
+		}
+
+		if (contains) {
+			return text.contains(name);
+		}
+
+		if (isRegex) {
+			return text.matches(name);
+		}
+
+		return text.equals(name);
+	}
+}
