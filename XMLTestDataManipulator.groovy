@@ -1,17 +1,3 @@
-def path = context.expand('${#TestCase#xmlSourcePath}')
-
-File[] files = new File(path).listFiles()
-
-log.info(files[0].toString())
-
-def dataMan = new XMLTestDataManipulator(files[0])
-dataMan.updateAllDatesRelativeToDetectedCreationDate()
-def xml_string = dataMan.getXmlAsString()
-log.info(xml_string)
-
-
-///// HELPER CLASS  //////
-
 import groovy.util.XmlSlurper;
 import groovy.util.slurpersupport.GPathResult;
 import groovy.xml.XmlUtil;
