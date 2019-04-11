@@ -12,9 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class XMLTestDataManipulator {
-
-	//TODO -- make independent of katalon and add to fednot selenium support or fednot test support.
-	//TOTO -- make pure java implementation for distributability
+	
+	//TODO -- make pure java implementation for distributability
 
 	/*XML holder for the object to do the manipulations on.
 	 XMLSlurper is a working object. You do the manipulation on a node.
