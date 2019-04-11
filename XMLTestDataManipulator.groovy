@@ -1,20 +1,34 @@
+def path = context.expand('${#TestCase#xmlSourcePath}')
+
+File[] files = new File(path).listFiles()
+
+log.info(files[0].toString())
+
+def dataMan = new XMLTestDataManipulator(files[0])
+dataMan.updateAllDatesRelativeToDetectedCreationDate()
+def xml_string = dataMan.getXmlAsString()
+log.info(xml_string)
+
+
+///// HELPER CLASS  //////
+
 import groovy.util.XmlSlurper;
 import groovy.util.slurpersupport.GPathResult;
 import groovy.xml.XmlUtil;
 
-import java.time.LocalDateTime
-import java.time.Period
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.regex.Pattern
-import java.util.concurrent.TimeUnit
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 
-import com.kms.katalon.core.logging.KeywordLogger;
 
 public class XMLTestDataManipulator {
 
-	//Logger -- Katalon, so not usable outside Katalon context.
-	KeywordLogger log = new KeywordLogger();
+	//TODO -- make independent of katalon and add to fednot selenium support or fednot test support.
+	//TOTO -- make pure java implementation for distributability
 
 	/*XML holder for the object to do the manipulations on.
 	 XMLSlurper is a working object. You do the manipulation on a node.
@@ -73,8 +87,6 @@ public class XMLTestDataManipulator {
 	 * @return this (fluid api)
 	 */
 	public XMLTestDataManipulator updateAllDatesRelativeToDetectedCreationDate() {
-		setFormatLibrary();
-
 		List<GPathResult> dateNodes = getDateNodes();
 		GPathResult createdDateNode = getCreatedDateNode();
 
@@ -86,12 +98,12 @@ public class XMLTestDataManipulator {
 
 		dateNodes.each {GPathResult node ->
 			node.replaceBody(
-				now.plusNanos(
+					now.plusNanos(
 					ChronoUnit.NANOS.between(
-						baseLineDt,
-						getDateFromNode(node)))
-				            .format(
-								getDateTimeFormatterFromNode(node)));
+					baseLineDt,
+					getDateFromNode(node)))
+					.format(
+					getDateTimeFormatterFromNode(node)));
 		}
 		return this;
 	}
@@ -146,10 +158,16 @@ public class XMLTestDataManipulator {
 	 *     --> If format not defined, IllegalFormatException thrown by getDateTimeFormatterFromNode()
 	 */
 	private LocalDateTime getDateFromNode(GPathResult node) {
-		LocalDateTime dateTime = LocalDateTime.parse(
-				node.toString(),
-				getDateTimeFormatterFromNode(node));
-		return dateTime;
+		try {
+		    return LocalDateTime.parse(
+		        node.toString(),
+		    	   getDateTimeFormatterFromNode(node));
+		} catch (java.time.DateTimeException e) {
+			return LocalDate.parse(
+			    node.toString(),
+			    getDateTimeFormatterFromNode(node))
+			    .atStartOfDay();
+		}
 	}
 
 
@@ -163,6 +181,10 @@ public class XMLTestDataManipulator {
 	}
 
 
+	/**
+	 * Helper method -- set the format library (at class level)
+	 * @return
+	 */
 	private Map<String, String> setFormatLibrary() {
 		Map<String, String> formatLibrary = new HashMap<>();
 		formatLibrary.put(
@@ -171,7 +193,33 @@ public class XMLTestDataManipulator {
 		formatLibrary.put(
 				/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
 				"yyyy-MM-dd'T'HH:mm:ss");
+
+		formatLibrary.put(
+		     	    /^\d{4}-\d{2}-\d{2}$/,
+		     	    "uuuu-MM-dd");
+		     	    
 		this.formatLibrary = formatLibrary;
+	}
+
+	private Map<String, String> getFormatLibrary() {
+		if(this.formatLibrary == null) {
+			Map<String, String> formatLibrary = new HashMap<>();
+
+			formatLibrary.put(
+					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/,
+					"yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+			formatLibrary.put(
+					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
+					"yyyy-MM-dd'T'HH:mm:ss");
+
+		     formatLibrary.put(
+		     	    /^\d{4}-\d{2}-\d{2}$/,
+		     	    "uuuu-MM-dd");
+
+			this.formatLibrary = formatLibrary;
+		}
+		return this.formatLibrary;
 	}
 
 
@@ -187,7 +235,7 @@ public class XMLTestDataManipulator {
 		boolean found;
 		found = false;
 
-		this.formatLibrary.each {reg, format ->
+		getFormatLibrary().each {reg, format ->
 			boolean m = (dateString =~ reg);
 			if(m) {
 				formatToUse = format;
