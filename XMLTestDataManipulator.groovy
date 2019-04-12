@@ -12,8 +12,9 @@ import java.util.concurrent.TimeUnit;
 
 
 public class XMLTestDataManipulator {
-	
-	//TODO -- make pure java implementation for distributability
+
+	//TODO -- make independent of katalon and add to fednot selenium support or fednot test support.
+	//TOTO -- make pure java implementation for distributability
 
 	/*XML holder for the object to do the manipulations on.
 	 XMLSlurper is a working object. You do the manipulation on a node.
@@ -89,6 +90,27 @@ public class XMLTestDataManipulator {
 					getDateFromNode(node)))
 					.format(
 					getDateTimeFormatterFromNode(node)));
+		}
+		return this;
+	}
+
+
+
+     /**
+      * Set a set of xml fields from a map.
+      * 
+      * Use a key value pair of string to string.
+      * 
+      * @param HashMap<String, String> params
+      * @return XMLTestDataManipulator
+      */
+	public XMLTestDataManipulator setFields(HashMap<String, String> params) {
+		params.each { key, value ->
+		    GPathResult node = xml
+		    key.split("\\.").each { step ->
+		        node = node."${step}"
+		    }
+		    node.replaceBody(value)
 		}
 		return this;
 	}
